@@ -12,6 +12,7 @@ import humidity_icon from "../assets/humidity.png";
 const Weather = () => {
   const inputRef = useRef();
   const [weatherData, setWeatherData] = useState(false);
+  const [forecastData, setForecastData] = useState([]);
 
   const allIcons = {
     "01d": clear_icon,
@@ -29,34 +30,100 @@ const Weather = () => {
     "13d": snow_icon,
     "13n": snow_icon,
   };
+  
   const search = async (city) => {
     if (city == "") {
       alert("Enter city name");
       return;
     }
     try {
-      const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${
+      // Current weather data
+      const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${
         import.meta.env.VITE_APP_ID
       }`;
-      const response = await fetch(url);
-      const data = await response.json();
-      if(!response.ok){
-        alert(data.message)
+      const currentResponse = await fetch(currentWeatherUrl);
+      const currentData = await currentResponse.json();
+      
+      if(!currentResponse.ok){
+        alert(currentData.message)
         return
       }
-      console.log(data);
-      const icon = allIcons[data.weather[0].icon] || clear_icon;
+      
+      console.log(currentData);
+      const icon = allIcons[currentData.weather[0].icon] || clear_icon;
       setWeatherData({
-        humidity: data.main.humidity,
-        windSpeed: data.wind.speed,
-        temperature: Math.floor(data.main.temp),
-        location: data.name,
+        humidity: currentData.main.humidity,
+        windSpeed: currentData.wind.speed,
+        temperature: Math.floor(currentData.main.temp),
+        location: currentData.name,
         icon: icon,
+        description: currentData.weather[0].description
       });
+      
+      // 5-day forecast data
+      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${
+        import.meta.env.VITE_APP_ID
+      }`;
+      const forecastResponse = await fetch(forecastUrl);
+      const forecastData = await forecastResponse.json();
+      
+      if(!forecastResponse.ok){
+        console.error(forecastData.message);
+        return;
+      }
+      
+      console.log("Forecast data:", forecastData);
+      
+      // Process forecast data to get one forecast per day
+      const dailyForecasts = processForecastData(forecastData.list);
+      setForecastData(dailyForecasts);
+      
     } catch (error) {
       setWeatherData(false);
-      console.log(error)
+      setForecastData([]);
+      console.log(error);
     }
+  };
+  
+  // Process forecast data to get one forecast per day
+  const processForecastData = (forecastList) => {
+    const dailyData = [];
+    const today = new Date().getDate();
+    
+    // Group forecasts by day
+    const dailyMap = {};
+    
+    forecastList.forEach(item => {
+      const date = new Date(item.dt * 1000);
+      const day = date.getDate();
+      
+      // Skip today's forecast
+      if (day === today) {
+        return;
+      }
+      
+      // Use the date as the key
+      const dateKey = date.toISOString().split('T')[0];
+      
+      if (!dailyMap[dateKey]) {
+        dailyMap[dateKey] = {
+          date: date,
+          icon: allIcons[item.weather[0].icon] || clear_icon,
+          temp: Math.floor(item.main.temp),
+          description: item.weather[0].description,
+          day: new Date(date).toLocaleDateString('en-US', { weekday: 'short' })
+        };
+      }
+    });
+    
+    // Convert map to array and take only 5 days
+    Object.values(dailyMap).forEach(day => {
+      if (dailyData.length < 5) {
+        dailyData.push(day);
+      }
+    });
+    
+    return dailyData;
   };
 
   useEffect(() => {
@@ -66,38 +133,76 @@ const Weather = () => {
   return (
     <div className="weather">
       <div className="search-bar">
-        <input ref={inputRef} type="text" placeholder="search" />
+        <input 
+          ref={inputRef} 
+          type="text" 
+          placeholder="Search city..." 
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              search(inputRef.current.value);
+            }
+          }}
+        />
         <img
           onClick={() => search(inputRef.current.value)}
           src={search_icon}
-          alt=""
+          alt="Search"
         />
       </div>
+      
       {weatherData ? (
         <>
-          {" "}
-          <img src={weatherData.icon} className="weather-icon" alt="" />
-          <p className="temperature">{weatherData.temperature}</p>
-          <p className="location">{weatherData.location}</p>
+          <div className="current-weather">
+            <div className="weather-left">
+              <p className="temperature">{weatherData.temperature}°C</p>
+              <p className="location">{weatherData.location}</p>
+              {weatherData.description && (
+                <p className="forecast-desc">{weatherData.description}</p>
+              )}
+            </div>
+            <div className="weather-right">
+              <img src={weatherData.icon} className="weather-icon" alt="Weather" />
+            </div>
+          </div>
+          
           <div className="weather-data">
             <div className="col">
-              <img src={humidity_icon} alt="" />
+              <img src={humidity_icon} alt="Humidity" />
               <div>
-                <p>{weatherData.humidity} %</p>
-                <span>humidity</span>
+                <p>{weatherData.humidity}%</p>
+                <span>Humidity</span>
               </div>
             </div>
             <div className="col">
-              <img src={wind_icon} alt="" />
+              <img src={wind_icon} alt="Wind" />
               <div>
-                <p>{weatherData.windSpeed} km/hr</p>
-                <span>wind speed</span>
+                <p>{weatherData.windSpeed} km/h</p>
+                <span>Wind Speed</span>
               </div>
             </div>
           </div>
+          
+          {/* 5-Day Forecast Section */}
+          {forecastData.length > 0 && (
+            <div className="forecast-container">
+              <h3>5-Day Forecast</h3>
+              <div className="forecast-items">
+                {forecastData.map((day, index) => (
+                  <div key={index} className="forecast-item">
+                    <p className="forecast-day">{day.day}</p>
+                    <img src={day.icon} className="forecast-icon" alt="Forecast" />
+                    <p className="forecast-temp">{day.temp}°C</p>
+                    <p className="forecast-desc">{day.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       ) : (
-        <></>
+        <div className="loading">
+          <p>Search for a city to see weather information</p>
+        </div>
       )}
     </div>
   );
