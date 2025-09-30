@@ -14,6 +14,7 @@ const Weather = () => {
   const [weatherData, setWeatherData] = useState(false);
   const [forecastData, setForecastData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [lastSearchedCity, setLastSearchedCity] = useState("");
 
   const allIcons = {
     "01d": clear_icon,
@@ -62,6 +63,9 @@ const Weather = () => {
         icon: icon,
         description: currentData.weather[0].description
       });
+      
+      // Save last searched city
+      setLastSearchedCity(currentData.name);
       
       // 5-day forecast data
       const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${
@@ -162,6 +166,14 @@ const Weather = () => {
             className="search-btn"
           />
         </div>
+
+        {/* Last Searched City */}
+        {lastSearchedCity && (
+          <div className="last-searched">
+            <span className="last-searched-label">Last searched:</span>
+            <span className="last-searched-city">{lastSearchedCity}</span>
+          </div>
+        )}
 
         {loading ? (
           <div className="loading">

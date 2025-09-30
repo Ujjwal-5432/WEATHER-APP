@@ -472,3 +472,31 @@
     padding: 20px 14px;
   }
 }
+
+
+.last-searched {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 30px;
+  padding: 12px 20px;
+  background: rgba(99, 102, 241, 0.15);
+  border-radius: 20px;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  animation: slideIn 0.5s ease-out;
+}
+
+.last-searched-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.last-searched-city {
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
