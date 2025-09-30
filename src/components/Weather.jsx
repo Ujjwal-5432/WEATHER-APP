@@ -55,6 +55,12 @@ const Weather = () => {
       
       console.log(currentData);
       const icon = allIcons[currentData.weather[0].icon] || clear_icon;
+      
+      // Save last searched city BEFORE updating to new city
+      if (weatherData && weatherData.location) {
+        setLastSearchedCity(weatherData.location);
+      }
+      
       setWeatherData({
         humidity: currentData.main.humidity,
         windSpeed: currentData.wind.speed,
@@ -63,9 +69,6 @@ const Weather = () => {
         icon: icon,
         description: currentData.weather[0].description
       });
-      
-      // Save last searched city
-      setLastSearchedCity(currentData.name);
       
       // 5-day forecast data
       const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${
